@@ -1,36 +1,17 @@
 // Merit and demerit guide shown on the website and used as quick buttons on the admin page.
 // Edit this list to change the guide. Points are always positive numbers.
-// Placement points from the camp score sheet. 1st to 6th place, in order.
-// 6 troops compete, so every scale needs 6 values. 'major' steps down by 20 from 200 to 100.
-export const PLACEMENT_SCALES = {
-  major: [200, 180, 160, 140, 120, 100],
-};
-
-// Which game uses which scale (names must match the game names exactly).
-export const GAME_SCALE = {
-  'Whistle Game': 'major',
-  'Amazing Race': 'major',
-  'Trashion Show': 'major',
-  'Volleyball': 'major',
-  'Yell': 'major',
-  'Flag Raising': 'major',
-  'Games': 'major',
-};
-
-// Every judged event is ranked and paid by placement. Names not listed above use the 'major' scale,
-// so an event you create yourself (Flag Making, Mr. Brigade, Cultural Dance...) never falls back to raw points.
-export const scaleFor = (gameName) => GAME_SCALE[gameName] ?? 'major';
+// Default placement points (1st place first). Organizers change them on the Games & guide page;
+// these are only used until the placement_points table exists.
+export const PLACEMENT_DEFAULT = [200, 180, 160, 140, 120, 100];
 
 /**
  * Turns judge averages into placement points. Tied troops share the better place
  * (two troops tied for 1st both get 1st-place points, the next troop is 3rd).
- * A troop with no average (nobody scored it) gets 0.
- * entries: [{ id, average }]  ->  Map(id -> points)
+ * A troop with no average (nobody scored it) gets 0, and so does any place past the end of the scale.
+ * entries: [{ id, average }], scale: [points for 1st, 2nd, ...]  ->  Map(id -> points)
  */
-export function placementPoints(entries, scaleName) {
-  const scale = PLACEMENT_SCALES[scaleName];
+export function placementPoints(entries, scale) {
   const out = new Map(entries.map((e) => [e.id, 0]));
-  if (!scale) return out;
   const ranked = entries
     .filter((e) => e.average !== null && e.average !== undefined)
     .map((e) => ({ id: e.id, avg: Math.round(Number(e.average) * 100) / 100 }))
@@ -43,7 +24,7 @@ export function placementPoints(entries, scaleName) {
 }
 
 export const RULES = {
-  placement: { scales: PLACEMENT_SCALES, games: GAME_SCALE },
+  placement: { scale: PLACEMENT_DEFAULT },
   merits: [
     { label: 'Punctuality', points: 10 },
     { label: 'Teamwork', points: 10 },

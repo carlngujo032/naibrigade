@@ -2,7 +2,6 @@ import { Router } from 'express';
 import { HttpError, pool, withTransaction } from '../db.js';
 import { generateJudgeCode, hashJudgeCode } from '../auth.js';
 import { getJudgingOverview } from '../judging.js';
-import { GAME_SCALE } from '../rules.js';
 
 // Mounted under /api/admin, after requireAdmin.
 export const judgingAdminRouter = Router();
@@ -113,11 +112,11 @@ judgingAdminRouter.put('/events/:id', async (req, res) => {
     const old = ev.rows[0];
     if (old.status === 'published') throw new HttpError(409, 'Move the event back to open before editing it.');
 
-    // Name. The leaderboard game is renamed too, unless it is a fixed scoreboard game (they keep their name and point scale).
+    // Name. The leaderboard game is renamed too when it was created together with the event.
     if (name !== old.name) {
       const dupeEvent = await db.query('SELECT 1 FROM events WHERE lower(name) = lower($1) AND event_id <> $2', [name, id]);
       if (dupeEvent.rowCount) throw new HttpError(409, 'Another event already has that name.');
-      if (old.category_name === old.name && !GAME_SCALE[old.category_name]) {
+      if (old.category_name === old.name) {
         const dupeGame = await db.query('SELECT 1 FROM categories WHERE lower(category_name) = lower($1) AND category_id <> $2', [name, old.category_id]);
         if (dupeGame.rowCount) throw new HttpError(409, 'A game with that name already exists.');
         await db.query('UPDATE categories SET category_name = $1 WHERE category_id = $2', [name, old.category_id]);

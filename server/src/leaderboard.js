@@ -1,12 +1,13 @@
 import { pool } from './db.js';
-import { placementPoints, scaleFor } from './rules.js';
+import { getPlacementScale } from './guide.js';
+import { placementPoints } from './rules.js';
 
 /**
  * Builds the leaderboard. Total = merit - demerit + sum of game scores
  * (same formula as the old PHP version). Tied troops share a rank.
  */
 export async function getLeaderboard() {
-  const [troopsRes, gamesRes, categoriesRes, judgedRes, eventsRes] = await Promise.all([
+  const [troopsRes, gamesRes, categoriesRes, judgedRes, eventsRes, scale] = await Promise.all([
     pool.query('SELECT troop_id, troop_name, merit_points, demerit_points FROM troops ORDER BY troop_id'),
     pool.query(`
       SELECT t.troop_id, c.category_id, c.category_name, COALESCE(s.score, 0) AS score
@@ -29,16 +30,16 @@ export async function getLeaderboard() {
       WHERE e.status = 'published'
       GROUP BY e.category_id, t.troop_id`),
     pool.query('SELECT category_id FROM events'),
+    getPlacementScale(),
   ]);
 
   // Judged games: rank troops by average judge score and award placement points (200, 180, ...).
-  const categoryName = new Map(categoriesRes.rows.map((c) => [c.category_id, c.category_name]));
   const judgedScore = new Map();
   for (const categoryId of new Set(judgedRes.rows.map((r) => r.category_id))) {
     const entries = judgedRes.rows
       .filter((r) => r.category_id === categoryId)
       .map((r) => ({ id: r.troop_id, average: r.average === null ? null : Number(r.average) }));
-    const placed = placementPoints(entries, scaleFor(categoryName.get(categoryId)));
+    const placed = placementPoints(entries, scale);
     for (const e of entries) judgedScore.set(`${e.id}:${categoryId}`, placed.get(e.id));
   }
   const judgedCategories = new Set(eventsRes.rows.map((r) => r.category_id));

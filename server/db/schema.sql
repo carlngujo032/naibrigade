@@ -101,6 +101,17 @@ FROM (VALUES
 ) AS v(kind, label, points, sort_order)
 WHERE NOT EXISTS (SELECT 1 FROM rules);
 
+-- Placement points: what 1st, 2nd, 3rd... place earn. Organizers edit them on the Games & guide page.
+CREATE TABLE IF NOT EXISTS placement_points (
+  place  INTEGER PRIMARY KEY CHECK (place >= 1),
+  points INTEGER NOT NULL CHECK (points >= 0 AND points <= 5000)
+);
+
+INSERT INTO placement_points (place, points)
+SELECT v.place, v.points
+FROM (VALUES (1, 200), (2, 180), (3, 160), (4, 140), (5, 120), (6, 100)) AS v(place, points)
+WHERE NOT EXISTS (SELECT 1 FROM placement_points);
+
 -- Seed data: the 6 continental troops and 7 scoreboard games from the camp score sheet (points start at 0)
 INSERT INTO categories (category_name) VALUES
   ('Whistle Game'), ('Amazing Race'), ('Trashion Show'),

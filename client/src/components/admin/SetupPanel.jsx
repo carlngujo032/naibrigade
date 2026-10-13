@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Award, Flag, ListChecks, Pencil, Plus, ShieldAlert, Trash2 } from 'lucide-react';
+import { Award, Flag, ListChecks, Medal, Pencil, Plus, ShieldAlert, Trash2, X } from 'lucide-react';
 import { api, ApiError } from '../../lib/api.js';
+import { ordinal } from '../../lib/format.js';
 import ConfirmButton from '../ConfirmButton.jsx';
 import Toast from '../Toast.jsx';
 
@@ -126,6 +127,57 @@ function AddForm({ placeholder, withPoints = false, onAdd }) {
   );
 }
 
+/** The points for 1st, 2nd, 3rd... Edit any number, remove a place, add one, then Save. */
+function PlacementCard({ scale, onSave }) {
+  const [rows, setRows] = useState(() => scale.map(String));
+  const [busy, setBusy] = useState(false);
+  const saved = scale.join(',');
+  useEffect(() => { setRows(scale.map(String)); }, [saved]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const valid = rows.length >= 1 && rows.every((v) => v.trim() !== '' && Number.isInteger(Number(v)) && Number(v) >= 0 && Number(v) <= 5000);
+  const changed = rows.join(',') !== saved;
+
+  async function save(e) {
+    e.preventDefault();
+    if (!valid || !changed || busy) return;
+    setBusy(true);
+    await onSave(rows.map(Number));
+    setBusy(false);
+  }
+  const setRow = (i, v) => setRows((list) => list.map((x, idx) => (idx === i ? v : x)));
+  const addPlace = () => setRows((list) => [...list, String(Math.max(0, (Number(list[list.length - 1]) || 0) - 20))]);
+
+  return (
+    <form onSubmit={save} className={card} aria-labelledby="placement-title">
+      <h2 id="placement-title" className="flex items-center gap-2 font-display text-3xl font-bold text-pine-900">
+        <Medal className="size-6" aria-hidden="true" />Placement points
+      </h2>
+      <p className="mt-1 text-sm text-muted">
+        What 1st, 2nd, 3rd place and so on earn in a game. These are the quick buttons on the Add points page, and the points judged games award by ranking.
+        Removing a place moves the places after it up. Troops ranked past the last place get 0.
+      </p>
+      <ul className="mt-3 grid gap-2 sm:grid-cols-2">
+        {rows.map((v, i) => (
+          <li key={i} className="flex items-center gap-2 rounded-xl bg-pine-900/5 px-4 py-2">
+            <span className="min-w-0 flex-1 font-medium">{ordinal(i + 1)} place</span>
+            <input aria-label={`Points for ${ordinal(i + 1)} place`} type="number" inputMode="numeric" min="0" max="5000" value={v} onChange={(e) => setRow(i, e.target.value)} className={`${inputBase} w-24 shrink-0 py-1.5 text-right`} />
+            <button type="button" onClick={() => setRows((list) => list.filter((_, idx) => idx !== i))} disabled={rows.length === 1} aria-label={`Remove ${ordinal(i + 1)} place`} className="rounded-full p-2 text-muted hover:bg-pine-900/10 disabled:opacity-30">
+              <X className="size-5" aria-hidden="true" />
+            </button>
+          </li>
+        ))}
+      </ul>
+      <div className="mt-4 flex flex-wrap items-center gap-3 border-t border-pine-900/10 pt-4">
+        <button type="button" onClick={addPlace} disabled={rows.length >= 20} className={`${quietBtn} flex items-center gap-1.5`}>
+          <Plus className="size-4" aria-hidden="true" />Add place
+        </button>
+        <button type="submit" disabled={!valid || !changed || busy} className={primaryBtn}>{busy ? 'Saving' : 'Save placement points'}</button>
+        {changed && <button type="button" onClick={() => setRows(scale.map(String))} className={quietBtn}>Undo changes</button>}
+      </div>
+    </form>
+  );
+}
+
 export default function SetupPanel({ onUnauthorized }) {
   const [data, setData] = useState(null);
   const [loadError, setLoadError] = useState('');
@@ -239,6 +291,8 @@ export default function SetupPanel({ onUnauthorized }) {
             </ul>
             <AddForm placeholder="New game, e.g. Tug of War" onAdd={(name) => act(() => api.createGame(name), `${name} added.`)} />
           </section>
+
+          <PlacementCard scale={data.rules.placement?.scale ?? []} onSave={(points) => act(() => api.setPlacement(points), 'Placement points saved.')} />
 
           <div className="grid gap-6 lg:grid-cols-2">
             {guideColumn('merit', 'Merits', Award, data.rules.merits, '+', 'text-merit', 'bg-merit/10')}

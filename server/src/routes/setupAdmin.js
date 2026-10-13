@@ -93,6 +93,24 @@ setupAdminRouter.put('/games/:id/scores/:troopId', async (req, res) => {
   res.json({ ok: true });
 });
 
+// ---- Placement points (what 1st, 2nd, 3rd... place earn). Replaces the whole list at once.
+setupAdminRouter.put('/placement', async (req, res) => {
+  const list = req.body?.points;
+  if (!Array.isArray(list) || list.length < 1 || list.length > 20) throw new HttpError(400, 'Keep between 1 and 20 places.');
+  const points = list.map(Number);
+  if (points.some((n) => !Number.isInteger(n) || n < 0 || n > 5000)) throw new HttpError(400, 'Each place needs a whole number of points from 0 to 5000.');
+  try {
+    await withTransaction(async (db) => {
+      await db.query('DELETE FROM placement_points');
+      for (const [i, p] of points.entries()) await db.query('INSERT INTO placement_points (place, points) VALUES ($1, $2)', [i + 1, p]);
+    });
+  } catch (err) {
+    if (err.code === '42P01') throw new HttpError(409, 'The placement table has not been created yet. Run the database update first.');
+    throw err;
+  }
+  res.json({ ok: true });
+});
+
 // ---- Merit and demerit guide
 const KINDS = ['merit', 'demerit'];
 

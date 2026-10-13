@@ -1,12 +1,13 @@
 import { pool } from './db.js';
-import { placementPoints, scaleFor } from './rules.js';
+import { getPlacementScale } from './guide.js';
+import { placementPoints } from './rules.js';
 
 const num = (v) => (v === null || v === undefined ? null : Number(v));
 const round2 = (n) => Math.round(n * 100) / 100;
 
 /** Everything the organizer's Judging page needs, in one go. */
 export async function getJudgingOverview() {
-  const [judges, events, criteria, assigned, subs, filled, totals, troops, cats] = await Promise.all([
+  const [judges, events, criteria, assigned, subs, filled, totals, troops, scale] = await Promise.all([
     pool.query('SELECT judge_id, name FROM judges ORDER BY judge_id'),
     pool.query('SELECT event_id, name, status, category_id FROM events ORDER BY event_id'),
     pool.query('SELECT criterion_id, event_id, name, max_points FROM event_criteria ORDER BY event_id, sort_order, criterion_id'),
@@ -15,10 +16,9 @@ export async function getJudgingOverview() {
     pool.query('SELECT event_id, judge_id, COUNT(*)::int AS n FROM judge_scores GROUP BY event_id, judge_id'),
     pool.query('SELECT event_id, troop_id, judge_id, SUM(score) AS total FROM judge_scores GROUP BY event_id, troop_id, judge_id'),
     pool.query('SELECT troop_id, troop_name FROM troops ORDER BY troop_id'),
-    pool.query('SELECT category_id, category_name FROM categories'),
+    getPlacementScale(),
   ]);
 
-  const categoryName = new Map(cats.rows.map((c) => [c.category_id, c.category_name]));
   const judgeName = new Map(judges.rows.map((j) => [j.judge_id, j.name]));
 
   const eventList = events.rows.map((e) => {
@@ -47,7 +47,7 @@ export async function getJudgingOverview() {
     });
 
     // Show placement points here, the same as the leaderboard will.
-    const placed = placementPoints(results.map((r) => ({ id: r.troopId, average: r.average })), scaleFor(categoryName.get(e.category_id)));
+    const placed = placementPoints(results.map((r) => ({ id: r.troopId, average: r.average })), scale);
     for (const r of results) r.points = placed.get(r.troopId);
 
     return {

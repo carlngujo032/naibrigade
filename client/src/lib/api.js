@@ -79,6 +79,7 @@ export const api = {
   createGame: (name) => request('/admin/games', { method: 'POST', body: { name }, auth: true }),
   renameGame: (id, name) => request(`/admin/games/${id}`, { method: 'PUT', body: { name }, auth: true }),
   setGameScore: (gameId, troopId, score) => request(`/admin/games/${gameId}/scores/${troopId}`, { method: 'PUT', body: { score }, auth: true }),
+  setPlacement: (points) => request('/admin/placement', { method: 'PUT', body: { points }, auth: true }),
   deleteGame: (id) => request(`/admin/games/${id}`, { method: 'DELETE', auth: true }),
   createRule: (kind, label, points) => request('/admin/rules', { method: 'POST', body: { kind, label, points }, auth: true }),
   updateRule: (id, label, points) => request(`/admin/rules/${id}`, { method: 'PUT', body: { label, points }, auth: true }),
