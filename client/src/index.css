@@ -1,0 +1,48 @@
+@import "tailwindcss";
+
+/* Palette is taken from the Nissi Academy crest: laurel green, torch red, flame gold. */
+@theme {
+  --font-display: "Barlow Condensed", "Arial Narrow", sans-serif;
+  --font-sans: "Public Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+
+  --color-pine-950: #0d2b21;
+  --color-pine-900: #123a2c;
+  --color-pine-800: #1a4d3a;
+  --color-pine-700: #226347;
+  --color-pine-100: #dce8da;
+  --color-field: #eef3ea;
+  --color-ink: #16231d;
+  --color-muted: #5a6b61;
+  --color-flame: #e5483b;
+  --color-gold: #f2b83a;
+  --color-merit: #1c7c54;
+  --color-demerit: #c23b2e;
+}
+
+html {
+  background: var(--color-field);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  min-height: 100vh;
+  margin: 0;
+}
+
+:focus-visible {
+  outline: 3px solid var(--color-gold);
+  outline-offset: 2px;
+}
+
+dialog::backdrop {
+  background: rgb(13 43 33 / 0.6);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}

@@ -1,0 +1,22 @@
+# Optional: Render "Blueprint" so you can create the API in one click.
+# Or skip this file and follow the manual steps in README.md.
+services:
+  - type: web
+    name: brigade2026-api
+    runtime: node
+    rootDir: server
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_VERSION
+        value: "20"
+      - key: DATABASE_URL      # paste your Neon connection string
+        sync: false
+      - key: ADMIN_PASSWORD    # the password organizers use at /admin
+        sync: false
+      - key: JWT_SECRET        # generated for you
+        generateValue: true
+      - key: CLIENT_ORIGIN     # your Vercel URL, e.g. https://brigade2026.vercel.app
+        sync: false
