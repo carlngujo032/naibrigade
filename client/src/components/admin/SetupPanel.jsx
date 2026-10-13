@@ -153,6 +153,13 @@ export default function SetupPanel({ onUnauthorized }) {
 
       {error && <p role="alert" className="mt-4 rounded-2xl bg-demerit/10 px-4 py-3 text-sm font-medium text-demerit">{error}</p>}
 
+      {data && [...data.rules.merits, ...data.rules.demerits].some((r) => r.id === undefined) && (
+        <p role="alert" className="mt-4 rounded-2xl bg-gold/30 px-4 py-3 text-sm font-medium text-pine-950">
+          The guide below is the built-in default and can&apos;t be edited yet, because its database table hasn&apos;t been created.
+          Create it once (run <code>npm run db:init</code>, or paste the SQL into Neon), then refresh this page.
+        </p>
+      )}
+
       {!data ? (
         <p className="mt-8 text-muted" role="status">{loadError || 'Loading. The first load can take up to a minute.'}</p>
       ) : (
