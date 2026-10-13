@@ -8,6 +8,7 @@ import LoginForm from '../components/admin/LoginForm.jsx';
 import AwardForm from '../components/admin/AwardForm.jsx';
 import HistoryList from '../components/admin/HistoryList.jsx';
 import JudgingPanel from '../components/admin/JudgingPanel.jsx';
+import SetupPanel from '../components/admin/SetupPanel.jsx';
 
 const navButton = 'flex items-center gap-2 rounded-full bg-white/10 px-4 py-2 text-sm font-semibold hover:bg-white/20';
 
@@ -87,6 +88,7 @@ function Tabs() {
       <div className="inline-flex gap-1 rounded-full bg-white p-1 ring-1 ring-pine-900/10">
         <NavLink to="/admin" end className={tab}>Add points</NavLink>
         <NavLink to="/admin/judging" className={tab}>Judging</NavLink>
+        <NavLink to="/admin/setup" className={tab}>Games &amp; guide</NavLink>
       </div>
     </nav>
   );
@@ -118,7 +120,9 @@ export default function Admin({ tab = 'points' }) {
       {signedIn
         ? (tab === 'judging'
           ? <JudgingPanel onUnauthorized={() => signOut('Your session expired. Please sign in again.')} />
-          : <Dashboard onUnauthorized={() => signOut('Your session expired. Please sign in again.')} />)
+          : tab === 'setup'
+            ? <SetupPanel onUnauthorized={() => signOut('Your session expired. Please sign in again.')} />
+            : <Dashboard onUnauthorized={() => signOut('Your session expired. Please sign in again.')} />)
         : <LoginForm notice={notice} onSignedIn={() => { setNotice(''); setSignedIn(true); }} />}
     </>
   );

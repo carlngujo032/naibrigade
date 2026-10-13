@@ -82,6 +82,25 @@ CREATE TABLE IF NOT EXISTS judge_submissions (
   PRIMARY KEY (event_id, judge_id)
 );
 
+-- Merit and demerit guide. Organizers edit it on the Games & guide page. Seeded only while the table is empty.
+CREATE TABLE IF NOT EXISTS rules (
+  rule_id    SERIAL PRIMARY KEY,
+  kind       VARCHAR(10) NOT NULL CHECK (kind IN ('merit', 'demerit')),
+  label      VARCHAR(80) NOT NULL,
+  points     INTEGER NOT NULL CHECK (points > 0 AND points <= 1000),
+  sort_order INTEGER NOT NULL DEFAULT 0
+);
+
+INSERT INTO rules (kind, label, points, sort_order)
+SELECT v.kind, v.label, v.points, v.sort_order
+FROM (VALUES
+  ('merit', 'Punctuality', 10, 1), ('merit', 'Teamwork', 10, 2), ('merit', 'Cleanest place', 50, 3),
+  ('merit', 'Volunteerism', 15, 4), ('merit', 'Good sports', 15, 5), ('merit', 'Generosity', 50, 6),
+  ('demerit', 'Late / incompleteness', 15, 1), ('demerit', 'Littering / untidiness', 15, 2), ('demerit', 'Disrespecting', 50, 3),
+  ('demerit', 'Violating camp rules', 50, 4), ('demerit', 'Arguing / causing disturbance', 20, 5), ('demerit', 'Tampering with camp materials', 50, 6)
+) AS v(kind, label, points, sort_order)
+WHERE NOT EXISTS (SELECT 1 FROM rules);
+
 -- Seed data: the 6 continental troops and 7 scoreboard games from the camp score sheet (points start at 0)
 INSERT INTO categories (category_name) VALUES
   ('Whistle Game'), ('Amazing Race'), ('Trashion Show'),

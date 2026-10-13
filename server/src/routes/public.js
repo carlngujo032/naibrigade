@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { getActivity, getLeaderboard } from '../leaderboard.js';
-import { RULES } from '../rules.js';
+import { getGuide } from '../guide.js';
 
 export const publicRouter = Router();
 
@@ -13,6 +13,6 @@ publicRouter.get('/activity', async (req, res) => {
   res.json({ activity: await getActivity(limit) });
 });
 
-publicRouter.get('/rules', (_req, res) => {
-  res.json(RULES);
+publicRouter.get('/rules', async (_req, res) => {
+  res.json(await getGuide());
 });

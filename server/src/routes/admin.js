@@ -4,6 +4,7 @@ import { HttpError, withTransaction } from '../db.js';
 import { passwordMatches, requireAdmin, signToken } from '../auth.js';
 import { getActivity } from '../leaderboard.js';
 import { judgingAdminRouter } from './judgingAdmin.js';
+import { setupAdminRouter } from './setupAdmin.js';
 
 export const adminRouter = Router();
 
@@ -105,3 +106,4 @@ adminRouter.delete('/log/:id', async (req, res) => {
 });
 
 adminRouter.use(judgingAdminRouter);
+adminRouter.use(setupAdminRouter);

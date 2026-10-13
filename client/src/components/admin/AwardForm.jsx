@@ -140,11 +140,11 @@ export default function AwardForm({ troops, categories, rules, onAdded, onUnauth
         </fieldset>
       )}
 
-      {kind === 'game' && game && rules?.placement?.games?.[game.name] && (
+      {kind === 'game' && game && rules?.placement && (
         <fieldset>
           <legend className="text-sm font-semibold text-muted">Quick pick by placement</legend>
           <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3">
-            {rules.placement.scales[rules.placement.games[game.name]]
+            {rules.placement.scales[rules.placement.games[game.name] ?? 'major']
               .map((pts, i) => ({ label: `${game.name}: ${ORDINALS[i]} place`, short: ORDINALS[i], points: pts }))
               .filter((p) => p.points > 0)
               .map((p) => (

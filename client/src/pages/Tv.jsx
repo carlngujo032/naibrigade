@@ -150,17 +150,19 @@ export default function Tv() {
 
   useEffect(() => {
     let alive = true;
-    const load = () => api.rules().then((r) => { if (alive) setRules(r); }).catch(() => { if (alive) setTimeout(load, 15_000); });
+    const load = () => api.rules().then((r) => { if (alive) setRules(r); }).catch(() => {});
     load();
-    return () => { alive = false; };
+    const refresh = setInterval(load, 60_000); // picks up guide edits made by organizers
+    return () => { alive = false; clearInterval(refresh); };
   }, []);
 
   // Alternate between hidden (30 s) and shown (8 s) once the rules have loaded.
+  const hasRules = !!rules;
   useEffect(() => {
-    if (!rules) return undefined;
+    if (!hasRules) return undefined;
     const timer = setTimeout(() => setGuide((g) => !g), guide ? GUIDE_SHOW_MS : GUIDE_HIDE_MS);
     return () => clearTimeout(timer);
-  }, [rules, guide]);
+  }, [hasRules, guide]);
 
   useEffect(() => { document.title = 'Brigade 2026 | TV view'; }, []);
   useEffect(() => {

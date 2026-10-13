@@ -109,6 +109,8 @@ Open your Vercel URL for the leaderboard, and add `/admin` to sign in.
 
 - **Render's free plan sleeps** after about 15 minutes without visits, and the first load afterwards can take up to a minute. The site shows a "waking up" note. Before the event, open the site once, or have a free uptime monitor (such as UptimeRobot) ping `https://YOUR-API.onrender.com/api/health` every 5 minutes.
 - **Old data.** Every score in the old MySQL dump was 0, so nothing needed migrating. The new database starts with the same 5 troops and 6 games.
-- **Add a troop or a game:** open Neon's SQL Editor and run `INSERT INTO troops (troop_name) VALUES ('Foxtrot');` or `INSERT INTO categories (category_name) VALUES ('Tug of War');`. The leaderboard and the organizer page pick them up automatically.
-- **Change the guide or the points shortcuts:** edit `server/src/rules.js`.
+- **Add, rename or delete a game, and edit merits and demerits:** open `/admin`, then the **Games & guide** tab. The public page and TV pick the changes up on their own.
+- **Add a troop:** open Neon's SQL Editor and run `INSERT INTO troops (troop_name) VALUES ('Foxtrot');`.
+- **Placement points (200, 180, ...):** edit `PLACEMENT_SCALES` in `server/src/rules.js`.
+- **Careful:** running `npm run db:init` again adds back any default game you deleted.
 - **Reset for a new year:** in the SQL Editor run `TRUNCATE point_log; UPDATE troops SET merit_points = 0, demerit_points = 0; UPDATE scores SET score = 0;`

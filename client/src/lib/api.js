@@ -75,6 +75,14 @@ export const api = {
   reopenJudge: (eventId, judgeId) => request(`/admin/events/${eventId}/judges/${judgeId}/reopen`, { method: 'POST', auth: true }),
   deleteEvent: (id) => request(`/admin/events/${id}`, { method: 'DELETE', auth: true }),
 
+  // Organizer: games and the merit/demerit guide
+  createGame: (name) => request('/admin/games', { method: 'POST', body: { name }, auth: true }),
+  renameGame: (id, name) => request(`/admin/games/${id}`, { method: 'PUT', body: { name }, auth: true }),
+  deleteGame: (id) => request(`/admin/games/${id}`, { method: 'DELETE', auth: true }),
+  createRule: (kind, label, points) => request('/admin/rules', { method: 'POST', body: { kind, label, points }, auth: true }),
+  updateRule: (id, label, points) => request(`/admin/rules/${id}`, { method: 'PUT', body: { label, points }, auth: true }),
+  deleteRule: (id) => request(`/admin/rules/${id}`, { method: 'DELETE', auth: true }),
+
   // Judge
   judgeLogin: (code) => request('/judge/login', { method: 'POST', body: { code } }),
   judgeEvents: (signal) => request('/judge/events', { auth: 'judge', signal }),

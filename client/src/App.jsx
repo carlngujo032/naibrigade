@@ -10,6 +10,7 @@ export default function App() {
       <Route path="/" element={<Leaderboard />} />
       <Route path="/admin" element={<Admin />} />
       <Route path="/admin/judging" element={<Admin tab="judging" />} />
+      <Route path="/admin/setup" element={<Admin tab="setup" />} />
       <Route path="/tv" element={<Tv />} />
       <Route path="/judge" element={<Judge />} />
       <Route path="*" element={<Navigate to="/" replace />} />
