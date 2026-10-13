@@ -1,5 +1,5 @@
 import { pool } from './db.js';
-import { GAME_SCALE, placementPoints } from './rules.js';
+import { placementPoints, scaleFor } from './rules.js';
 
 /**
  * Builds the leaderboard. Total = merit - demerit + sum of game scores
@@ -31,19 +31,15 @@ export async function getLeaderboard() {
     pool.query('SELECT category_id FROM events'),
   ]);
 
-  // Judged games: if the game has a placement scale, rank troops by average and award placement
-  // points; otherwise the rounded average itself is the score.
+  // Judged games: rank troops by average judge score and award placement points (200, 180, ...).
   const categoryName = new Map(categoriesRes.rows.map((c) => [c.category_id, c.category_name]));
   const judgedScore = new Map();
   for (const categoryId of new Set(judgedRes.rows.map((r) => r.category_id))) {
     const entries = judgedRes.rows
       .filter((r) => r.category_id === categoryId)
       .map((r) => ({ id: r.troop_id, average: r.average === null ? null : Number(r.average) }));
-    const scale = GAME_SCALE[categoryName.get(categoryId)];
-    const placed = scale ? placementPoints(entries, scale) : null;
-    for (const e of entries) {
-      judgedScore.set(`${e.id}:${categoryId}`, placed ? placed.get(e.id) : e.average === null ? 0 : Math.round(e.average));
-    }
+    const placed = placementPoints(entries, scaleFor(categoryName.get(categoryId)));
+    for (const e of entries) judgedScore.set(`${e.id}:${categoryId}`, placed.get(e.id));
   }
   const judgedCategories = new Set(eventsRes.rows.map((r) => r.category_id));
 

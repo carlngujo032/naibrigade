@@ -1,5 +1,5 @@
 import { pool } from './db.js';
-import { GAME_SCALE, placementPoints } from './rules.js';
+import { placementPoints, scaleFor } from './rules.js';
 
 const num = (v) => (v === null || v === undefined ? null : Number(v));
 const round2 = (n) => Math.round(n * 100) / 100;
@@ -46,12 +46,9 @@ export async function getJudgingOverview() {
       return { troopId: t.troop_id, name: t.troop_name, totals: perJudge, average, points: average === null ? 0 : Math.round(average) };
     });
 
-    // Games with a placement scale show placement points here, the same as the leaderboard will.
-    const scale = GAME_SCALE[categoryName.get(e.category_id)];
-    if (scale) {
-      const placed = placementPoints(results.map((r) => ({ id: r.troopId, average: r.average })), scale);
-      for (const r of results) r.points = placed.get(r.troopId);
-    }
+    // Show placement points here, the same as the leaderboard will.
+    const placed = placementPoints(results.map((r) => ({ id: r.troopId, average: r.average })), scaleFor(categoryName.get(e.category_id)));
+    for (const r of results) r.points = placed.get(r.troopId);
 
     return {
       id: e.event_id,

@@ -4,7 +4,6 @@
 // 6 troops compete, so every scale needs 6 values. 'major' steps down by 20 from 200 to 100.
 export const PLACEMENT_SCALES = {
   major: [200, 180, 160, 140, 120, 100],
-  minor: [100, 85, 50, 25, 10, 0],
 };
 
 // Which game uses which scale (names must match the game names exactly).
@@ -14,9 +13,13 @@ export const GAME_SCALE = {
   'Trashion Show': 'major',
   'Volleyball': 'major',
   'Yell': 'major',
-  'Flag Raising': 'minor',
-  'Games': 'minor',
+  'Flag Raising': 'major',
+  'Games': 'major',
 };
+
+// Every judged event is ranked and paid by placement. Names not listed above use the 'major' scale,
+// so an event you create yourself (Flag Making, Mr. Brigade, Cultural Dance...) never falls back to raw points.
+export const scaleFor = (gameName) => GAME_SCALE[gameName] ?? 'major';
 
 /**
  * Turns judge averages into placement points. Tied troops share the better place

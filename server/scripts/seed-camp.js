@@ -1,4 +1,4 @@
-// Sets up Camping 2026: 6 continental troops, 7 scoreboard games, and the judged events with the official rubrics.
+// Sets up Camping 2026: 6 continental troops, 7 games, and the judged events (Flag Making, Yell, Trashion Show, Whistle Game) with the official rubrics.
 // Safe to run more than once. Run after db:init:   npm run camp:seed
 import 'dotenv/config';
 import pg from 'pg';
@@ -14,10 +14,10 @@ const GAMES = ['Whistle Game', 'Amazing Race', 'Trashion Show', 'Volleyball', 'Y
 // Old sample troops are renamed in place (only if the new name is not taken yet).
 const LEGACY = [['Alpha', 'Africa'], ['Bravo', 'Asia'], ['Charlie', 'Australia'], ['Delta', 'Europe'], ['Echo', 'North America']];
 
-// name = what judges see, game = the scoreboard column it feeds. Points per criterion come from Judging-Rubrics.docx.
+// name = what judges see, game = the leaderboard column it feeds (created if missing). Points per criterion come from Judging-Rubrics.docx.
 const EVENTS = [
   {
-    name: 'Flag Making', game: 'Flag Raising',
+    name: 'Flag Making', game: 'Flag Making', // its own judged game, separate from the Flag Raising game
     criteria: [
       ['Creativity and Originality', 25], ['Relevance to Theme / Symbolism', 20], ['Neatness and Craftsmanship', 20],
       ['Team Effort and Participation', 15], ['Presentation and Explanation', 10], ['Overall Impact', 10],
@@ -68,6 +68,7 @@ try {
   for (const ev of EVENTS) {
     const exists = await client.query('SELECT 1 FROM events WHERE name = $1', [ev.name]);
     if (exists.rowCount) { console.log(`Skipped "${ev.name}" (already exists).`); continue; }
+    await client.query('INSERT INTO categories (category_name) VALUES ($1) ON CONFLICT (category_name) DO NOTHING', [ev.game]);
     const cat = await client.query('SELECT category_id FROM categories WHERE category_name = $1', [ev.game]);
     const made = await client.query('INSERT INTO events (name, category_id) VALUES ($1, $2) RETURNING event_id', [ev.name, cat.rows[0].category_id]);
     for (const [i, [name, max]] of ev.criteria.entries()) {
