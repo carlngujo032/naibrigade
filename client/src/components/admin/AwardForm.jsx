@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { Award, Check, Flag, ShieldAlert } from 'lucide-react';
 import { api, ApiError } from '../../lib/api.js';
 import { plain, signed, troopColor } from '../../lib/format.js';
@@ -124,6 +125,9 @@ export default function AwardForm({ troops, categories, rules, onAdded, onUnauth
               </Choice>
             ))}
           </div>
+          <p className="mt-2 text-sm text-muted">
+            Need to add, change or remove one? <Link to="/admin/setup" className="font-semibold text-pine-900 underline">Edit the guide</Link>
+          </p>
         </fieldset>
       )}
 

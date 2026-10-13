@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, Award, Crown, Maximize, Medal, Minimize, ShieldAlert, Trophy } from 'lucide-react';
+import { ArrowLeft, Award, Crown, Maximize, Medal, Minimize, ShieldAlert, Trophy, X } from 'lucide-react';
 import { api } from '../lib/api.js';
 import { plain, signed, troopColor } from '../lib/format.js';
 import { usePolling } from '../lib/usePolling.js';
@@ -125,11 +125,26 @@ function GuideColumn({ title, Icon, items, sign, titleClass, rowClass }) {
   );
 }
 
-function GuidePopup({ rules }) {
+function GuidePopup({ rules, onClose }) {
+  useEffect(() => {
+    const onKey = (e) => { if (e.key === 'Escape') onClose(); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [onClose]);
+
   return (
-    <div className="fixed inset-0 z-50 grid place-items-center bg-black/70 p-[4vh]" role="dialog" aria-label="Merit and demerit guide">
-      <div className="w-full max-w-[90vw] rounded-[3vh] bg-white p-[4vh] text-pine-950 shadow-2xl">
-        <h2 className="font-display font-extrabold text-pine-900" style={{ fontSize: '6vh' }}>Merit and demerit guide</h2>
+    <div className="fixed inset-0 z-50 grid place-items-center bg-black/70 p-[4vh]" role="dialog" aria-label="Merit and demerit guide" onClick={onClose}>
+      <div className="relative w-full max-w-[90vw] rounded-[3vh] bg-white p-[4vh] text-pine-950 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label="Close guide"
+          className="absolute right-[2vh] top-[2vh] grid place-items-center rounded-full bg-pine-900/10 text-pine-900 hover:bg-pine-900/20"
+          style={{ width: '6vh', height: '6vh' }}
+        >
+          <X style={{ width: '3.6vh', height: '3.6vh' }} aria-hidden="true" />
+        </button>
+        <h2 className="pr-[8vh] font-display font-extrabold text-pine-900" style={{ fontSize: '6vh' }}>Merit and demerit guide</h2>
         <div className="mt-[2vh] grid grid-cols-2 gap-[4vh]">
           <GuideColumn title="Merits" Icon={Award} items={rules.merits} sign="+" titleClass="text-merit" rowClass="bg-merit/10" />
           <GuideColumn title="Demerits" Icon={ShieldAlert} items={rules.demerits} sign={'\u2212'} titleClass="text-demerit" rowClass="bg-demerit/10" />
@@ -158,6 +173,7 @@ export default function Tv() {
 
   // Alternate between hidden (30 s) and shown (8 s) once the rules have loaded.
   const hasRules = !!rules;
+  const closeGuide = useCallback(() => setGuide(false), []);
   useEffect(() => {
     if (!hasRules) return undefined;
     const timer = setTimeout(() => setGuide((g) => !g), guide ? GUIDE_SHOW_MS : GUIDE_HIDE_MS);
@@ -225,7 +241,7 @@ export default function Tv() {
         )}
       </main>
 
-      {guide && rules && <GuidePopup rules={rules} />}
+      {guide && rules && <GuidePopup rules={rules} onClose={closeGuide} />}
 
       <footer className="px-[2vw] py-[1.4vh] text-white/90" style={{ fontSize: '2.4vh' }}>
         <Ticker activity={data?.activity ?? []} />

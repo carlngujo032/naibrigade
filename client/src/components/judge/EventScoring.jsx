@@ -32,7 +32,7 @@ export default function EventScoring({ event, troops, onSubmitted, onUnauthorize
     if (blank(raw)) return '';
     const n = Number(raw);
     if (!Number.isFinite(n) || n < 0) return 'Enter a number from 0 up';
-    if (n > c.max) return `Max is ${c.max}`;
+    if (n > c.max) return `Too high. The most you can give is ${c.max}. Please change it.`;
     return '';
   };
 
@@ -41,7 +41,8 @@ export default function EventScoring({ event, troops, onSubmitted, onUnauthorize
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [values, troops, event.criteria],
   );
-  const hasErrors = Object.values(errors).some(Boolean);
+  const errorCount = Object.values(errors).filter(Boolean).length;
+  const hasErrors = errorCount > 0;
   const totalFor = (t) => event.criteria.reduce((s, c) => {
     const v = values[t.id]?.[c.id];
     return s + (blank(v) || validate(c, v) ? 0 : Number(v));
@@ -124,6 +125,7 @@ export default function EventScoring({ event, troops, onSubmitted, onUnauthorize
         {troops.map((t) => {
           const color = troopColor(t.name, t.id);
           const st = status[t.id];
+          const troopHasError = event.criteria.some((c) => errors[`${t.id}:${c.id}`]);
           return (
             <fieldset key={t.id} disabled={!editable} className="overflow-hidden rounded-3xl bg-white shadow-sm ring-1 ring-pine-900/10">
               <div className="h-2" style={{ backgroundColor: color }} aria-hidden="true" />
@@ -158,7 +160,7 @@ export default function EventScoring({ event, troops, onSubmitted, onUnauthorize
                             onBlur={() => onBlur(t.id)}
                             aria-invalid={!!errors[key]}
                             aria-describedby={errors[key] ? `${id}-err` : undefined}
-                            className={`w-24 rounded-xl border-2 px-3 py-2 text-right font-display text-3xl font-bold tabular-nums focus:outline-none disabled:bg-pine-900/5 disabled:text-ink ${errors[key] ? 'border-demerit' : 'border-pine-900/20 focus:border-pine-900'}`}
+                            className={`w-24 rounded-xl border-2 px-3 py-2 text-right font-display text-3xl font-bold tabular-nums focus:outline-none disabled:bg-pine-900/5 disabled:text-ink ${errors[key] ? 'border-demerit bg-demerit/10 text-demerit' : 'border-pine-900/20 focus:border-pine-900'}`}
                           />
                         </div>
                         {errors[key] && <p id={`${id}-err`} className="mt-1 text-right text-sm font-medium text-demerit">{errors[key]}</p>}
@@ -168,9 +170,10 @@ export default function EventScoring({ event, troops, onSubmitted, onUnauthorize
                 </div>
 
                 <p className="mt-3 flex h-5 items-center justify-end gap-1.5 text-sm text-muted" aria-live="polite">
-                  {st === 'saving' && <><LoaderCircle className="size-4 motion-safe:animate-spin" aria-hidden="true" />Saving</>}
-                  {st === 'saved' && <><CheckCircle2 className="size-4 text-merit" aria-hidden="true" />Saved</>}
-                  {st === 'error' && <><TriangleAlert className="size-4 text-demerit" aria-hidden="true" />Not saved</>}
+                  {troopHasError && <><TriangleAlert className="size-4 text-demerit" aria-hidden="true" /><span className="font-semibold text-demerit">Not saved. Fix the red score.</span></>}
+                  {!troopHasError && st === 'saving' && <><LoaderCircle className="size-4 motion-safe:animate-spin" aria-hidden="true" />Saving</>}
+                  {!troopHasError && st === 'saved' && <><CheckCircle2 className="size-4 text-merit" aria-hidden="true" />Saved</>}
+                  {!troopHasError && st === 'error' && <><TriangleAlert className="size-4 text-demerit" aria-hidden="true" />Not saved</>}
                 </p>
               </div>
             </fieldset>
@@ -180,6 +183,12 @@ export default function EventScoring({ event, troops, onSubmitted, onUnauthorize
 
       {editable && (
         <div className="sticky bottom-0 z-10 -mx-4 mt-6 border-t border-pine-900/10 bg-field/95 px-4 py-4 backdrop-blur sm:mx-0 sm:rounded-3xl sm:border sm:bg-white sm:px-6">
+          {hasErrors && (
+            <p role="alert" className="mb-3 flex items-start gap-2 rounded-2xl bg-demerit/10 px-4 py-3 font-semibold text-demerit">
+              <TriangleAlert className="mt-0.5 size-5 shrink-0" aria-hidden="true" />
+              {errorCount === 1 ? '1 score is above its maximum' : `${errorCount} scores are above their maximum`}. Change {errorCount === 1 ? 'it' : 'them'} (shown in red) before you can submit.
+            </p>
+          )}
           {confirming ? (
             <div>
               <p className="font-semibold">Submit your scores for {event.name}?</p>
