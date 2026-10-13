@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Award, Flag, Pencil, Plus, ShieldAlert, Trash2 } from 'lucide-react';
+import { Award, Flag, ListChecks, Pencil, Plus, ShieldAlert, Trash2 } from 'lucide-react';
 import { api, ApiError } from '../../lib/api.js';
 import ConfirmButton from '../ConfirmButton.jsx';
 import Toast from '../Toast.jsx';
@@ -12,9 +12,10 @@ const quietBtn = 'rounded-full bg-pine-900/10 px-4 py-2 text-sm font-semibold te
 const validPoints = (v) => Number.isInteger(Number(v)) && Number(v) >= 1 && Number(v) <= 1000 && String(v).trim() !== '';
 
 /** One line in a list: shows the name (and points), with edit and delete. */
-function Row({ label, points, sign, tone = 'bg-pine-900/5', badge, readOnly = false, onSave, onDelete }) {
+function Row({ label, points, sign, tone = 'bg-pine-900/5', badge, readOnly = false, scores = null, onSave, onDelete }) {
   const withPoints = points !== undefined;
   const [editing, setEditing] = useState(false);
+  const [showScores, setShowScores] = useState(false);
   const [name, setName] = useState(label);
   const [pts, setPts] = useState(String(points ?? ''));
   const [busy, setBusy] = useState(false);
@@ -45,18 +46,54 @@ function Row({ label, points, sign, tone = 'bg-pine-900/5', badge, readOnly = fa
   }
 
   return (
-    <li className={`flex items-center gap-3 rounded-xl px-4 py-3 ${tone}`}>
-      <span className="min-w-0 flex-1 font-medium">{label}</span>
-      {badge}
-      {withPoints && <span className="font-display text-2xl font-bold tabular-nums">{sign}{points}</span>}
-      {!readOnly && (
-        <span className="flex shrink-0 items-center gap-1">
-          <button type="button" onClick={() => { setName(label); setPts(String(points ?? '')); setEditing(true); }} aria-label={`Edit ${label}`} className="rounded-full p-2 text-muted hover:bg-pine-900/10">
-            <Pencil className="size-5" aria-hidden="true" />
+    <li className={`rounded-xl ${tone}`}>
+      <div className="flex items-center gap-3 px-4 py-3">
+        <span className="min-w-0 flex-1 font-medium">{label}</span>
+        {badge}
+        {withPoints && <span className="font-display text-2xl font-bold tabular-nums">{sign}{points}</span>}
+        {scores && (
+          <button type="button" onClick={() => setShowScores((v) => !v)} aria-expanded={showScores} className={`${quietBtn} flex items-center gap-1.5`}>
+            <ListChecks className="size-4" aria-hidden="true" />Scores
           </button>
-          <ConfirmButton Icon={Trash2} label="Delete" confirmLabel="Confirm delete" onConfirm={onDelete} />
-        </span>
-      )}
+        )}
+        {!readOnly && (
+          <span className="flex shrink-0 items-center gap-1">
+            <button type="button" onClick={() => { setName(label); setPts(String(points ?? '')); setEditing(true); }} aria-label={`Edit ${label}`} className="rounded-full p-2 text-muted hover:bg-pine-900/10">
+              <Pencil className="size-5" aria-hidden="true" />
+            </button>
+            <ConfirmButton Icon={Trash2} label="Delete" confirmLabel="Confirm delete" onConfirm={onDelete} />
+          </span>
+        )}
+      </div>
+      {scores && showScores && <div className="border-t border-pine-900/10 px-4 py-3">{scores}</div>}
+    </li>
+  );
+}
+
+/** One troop's score in a game, editable. */
+function TroopScore({ troop, game, current, onSave }) {
+  const [val, setVal] = useState(String(current));
+  const [busy, setBusy] = useState(false);
+  useEffect(() => { setVal(String(current)); }, [current]);
+  const n = Number(val);
+  const valid = val.trim() !== '' && Number.isInteger(n) && n >= 0 && n <= 5000;
+  const changed = valid && n !== current;
+
+  async function save(e) {
+    e.preventDefault();
+    if (!changed || busy) return;
+    setBusy(true);
+    await onSave(n);
+    setBusy(false);
+  }
+
+  return (
+    <li>
+      <form onSubmit={save} className="flex items-center gap-2 rounded-xl bg-white px-3 py-2">
+        <span className="min-w-0 flex-1 font-medium">{troop.name}</span>
+        <input aria-label={`${troop.name} score in ${game}`} type="number" inputMode="numeric" min="0" max="5000" value={val} onChange={(e) => setVal(e.target.value)} className={`${inputBase} w-24 shrink-0 py-1.5 text-right`} />
+        <button type="submit" disabled={!changed || busy} className={quietBtn}>{busy ? 'Saving' : 'Save'}</button>
+      </form>
     </li>
   );
 }
@@ -99,7 +136,7 @@ export default function SetupPanel({ onUnauthorized }) {
   const load = useCallback(async () => {
     try {
       const [board, rules] = await Promise.all([api.leaderboard(), api.rules()]);
-      setData({ games: board.categories, rules });
+      setData({ games: board.categories, troops: board.troops, rules });
       setLoadError('');
     } catch (err) {
       setLoadError(err.message);
@@ -169,8 +206,8 @@ export default function SetupPanel({ onUnauthorized }) {
               <Flag className="size-6" aria-hidden="true" />Games
             </h2>
             <p className="mt-1 text-sm text-muted">
-              These are the games you give points for on the Add points page. Deleting a game removes every troop&apos;s score for it.
-              Games scored by judges are managed on the Judging page.
+              These are the games you give points for on the Add points page. Press Scores on a game to correct any troop&apos;s score.
+              Deleting a game removes every troop&apos;s score for it. Games scored by judges are managed on the Judging page.
             </p>
             <ul className="mt-3 space-y-2">
               {data.games.map((g) => (
@@ -178,6 +215,22 @@ export default function SetupPanel({ onUnauthorized }) {
                   key={g.id}
                   label={g.name}
                   readOnly={g.judged}
+                  scores={g.judged ? null : (
+                    <>
+                      <p className="mb-2 text-sm text-muted">Type the correct total for each troop and press Save. The change shows in the latest entries, where you can undo it.</p>
+                      <ul className="grid gap-2 sm:grid-cols-2">
+                        {data.troops.map((t) => (
+                          <TroopScore
+                            key={t.id}
+                            troop={t}
+                            game={g.name}
+                            current={t.games.find((x) => x.categoryId === g.id)?.score ?? 0}
+                            onSave={(score) => act(() => api.setGameScore(g.id, t.id, score), `${t.name}: ${g.name} is now ${score}.`)}
+                          />
+                        ))}
+                      </ul>
+                    </>
+                  )}
                   badge={g.judged ? <span className="rounded-full bg-gold/30 px-2.5 py-0.5 text-xs font-semibold text-pine-950">Judged</span> : null}
                   onSave={(name) => act(() => api.renameGame(g.id, name), `Renamed to ${name}.`)}
                   onDelete={() => act(() => api.deleteGame(g.id), `${g.name} was deleted.`)}

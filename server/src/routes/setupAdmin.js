@@ -59,6 +59,40 @@ setupAdminRouter.delete('/games/:id', async (req, res) => {
   res.json({ ok: true });
 });
 
+// Set a troop's score in a hand-scored game to an exact number (fixing a wrong entry).
+// Recorded as one adjustment in the points feed, so it shows up in the history and can be undone.
+setupAdminRouter.put('/games/:id/scores/:troopId', async (req, res) => {
+  const id = idParam(req.params.id, 'game');
+  const troopId = idParam(req.params.troopId, 'troop');
+  const target = Number(req.body?.score);
+  if (!Number.isInteger(target) || target < 0 || target > 5000) throw new HttpError(400, 'Score must be a whole number from 0 to 5000.');
+
+  await withTransaction(async (db) => {
+    const game = await db.query('SELECT 1 FROM categories WHERE category_id = $1', [id]);
+    if (!game.rowCount) throw new HttpError(404, 'Game not found.');
+    const judged = await db.query('SELECT 1 FROM events WHERE category_id = $1', [id]);
+    if (judged.rowCount) throw new HttpError(409, JUDGED);
+    const troop = await db.query('SELECT 1 FROM troops WHERE troop_id = $1 FOR UPDATE', [troopId]);
+    if (!troop.rowCount) throw new HttpError(404, 'Troop not found.');
+
+    const cur = await db.query('SELECT score FROM scores WHERE troop_id = $1 AND category_id = $2 FOR UPDATE', [troopId, id]);
+    const current = cur.rowCount ? cur.rows[0].score : 0;
+    const delta = target - current;
+    if (delta === 0) return;
+
+    await db.query(
+      `INSERT INTO scores (troop_id, category_id, score) VALUES ($1, $2, $3)
+       ON CONFLICT (troop_id, category_id) DO UPDATE SET score = EXCLUDED.score, updated_at = now()`,
+      [troopId, id, target],
+    );
+    await db.query(
+      "INSERT INTO point_log (troop_id, kind, category_id, points, note) VALUES ($1, 'game', $2, $3, $4)",
+      [troopId, id, delta, `Score corrected (was ${current})`],
+    );
+  });
+  res.json({ ok: true });
+});
+
 // ---- Merit and demerit guide
 const KINDS = ['merit', 'demerit'];
 
